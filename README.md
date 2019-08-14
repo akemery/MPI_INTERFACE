@@ -23,3 +23,10 @@ struct message{
   char name[MAX_PATH];  /* name of file being operated on*/
   char data[BUF_SIZE];  /* data to read or written*/
 };
+
+# To test
+
+$ gcc broker.c main_node.c -o main_node
+$ gcc broker.c node.c -o node
+$ ./main_node
+$ ./node
