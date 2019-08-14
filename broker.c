@@ -73,37 +73,56 @@ int broker_initsem(int semid){
 int broker_sendmsg(int semid, long src, long dst, long count, long offset, 
           long opcode, long result, char *name, char *data){
    broker_lock(semid);
-   struct message msg;
-   msg.source = src;
-   msg.dest = dst;
-   msg.opcode = opcode;
-   msg.count  = count;
-   msg.offset = offset;
-   msg.result = result;
-   strncpy(msg.name, name, MAX_PATH);
-   strncpy(msg.data, data, BUF_SIZE);
    int posid = atoi(pos);
-   printf("Position id %d\n", posid);
+   (broker_buff+posid)->source = src;
+   (broker_buff+posid)->dest = dst;
+   (broker_buff+posid)->opcode = opcode;
+   (broker_buff+posid)->count  = count;
+   (broker_buff+posid)->offset = offset;
+   (broker_buff+posid)->result = result;
+   strncpy((broker_buff+posid)->name, name, MAX_PATH);
+   strncpy((broker_buff+posid)->data, data, BUF_SIZE);
    posid++;
    sprintf(pos, "%d", posid);
    broker_unlock(semid);
 }
 
-void initialize_node(char* node_buff_file, char * broker_buff_file,
-    char* node_info_buff_file, 
-    int node_info_buff_id, int node_buff_id, int broker_buff_id,
-    int node_info_buff_size, int node_buff_size, int broker_buff_size,
-    int node_buff_flags, int node_info_buff_flags, int broker_buff_flags,
-    int node_info_buff_shmid, int broker_buff_shmid, int node_buff_shmid ){
-   
+int broker_rcvmsg(int semid){
+   broker_lock(semid);
+   int posid = atoi(pos);
+   printf("recv Position id %d %s %s\n", posid, (broker_buff+posid)->name, 
+                            (broker_buff+posid)->data );
+   posid--;
+   sprintf(pos, "%d", posid);
+   broker_unlock(semid);
+}
+
+void initialize_node(struct broker_shm_info broker_buff_info,
+                     struct broker_shm_info node_buff_info,
+                     struct broker_shm_info node_info_buff_info ){
     broker_buff = 
-      (struct message*)broker_createbuffer(broker_buff_file, broker_buff_id, 
-                   broker_buff_flags, broker_buff_size, &broker_buff_shmid);
+      (struct message*)broker_createbuffer(broker_buff_info.shm_file,
+                        broker_buff_info.shm_conf_id, 
+                        broker_buff_info.shm_flags, 
+                        broker_buff_info.shm_size, 
+                        &broker_buff_info.shm_id);
+    if(broker_buff == NULL)
+         printf("Impossible de créer le buffer\n");
     node_buff = 
-      (struct message*)broker_createbuffer(node_buff_file, node_buff_id, 
-                   node_buff_flags, node_buff_size, &node_buff_shmid);
+      (struct message*)broker_createbuffer(node_buff_info.shm_file,
+                        node_buff_info.shm_conf_id, 
+                        node_buff_info.shm_flags, 
+                        node_buff_info.shm_size, 
+                        &node_buff_info.shm_id);
 
     node_info_buff = 
-      (struct message*)broker_createbuffer(node_info_buff_file, node_info_buff_id, 
-               node_info_buff_flags, node_info_buff_size, &node_info_buff_shmid);
+      (struct node_info *)broker_createbuffer(node_info_buff_info.shm_file,
+                        node_info_buff_info.shm_conf_id, 
+                        node_info_buff_info.shm_flags, 
+                        node_info_buff_info.shm_size, 
+                        &node_info_buff_info.shm_id);
+}
+
+int register_node(struct node_info node){
+   return(OK);
 }
